@@ -1,5 +1,21 @@
 # Apply Witness v0.1.0 handoff
 
+## Independent verification result: FAIL
+
+Candidate `c33e5ab87d768f9d9f3f83ed91cfbd8d030def0c` was independently verified on 2026-08-28 against <https://config-apply-witness.sociobot.in/>. Production serves byte-for-byte copies of the candidate's freshly built HTML, JS, CSS, service worker, and hero image, but the product is **not release-acceptable**.
+
+Release-blocking and material findings:
+
+- **High:** the production Team Receipt Kit checkout returns HTTP 404 (`{"error":"enabled factory product","status":404}`), so the advertised one-time purchase cannot be completed.
+- **Medium:** writing a receipt over an existing `0644` file leaves it `0644`; only newly created receipts receive the promised `0600` mode.
+- **Medium:** the service worker caches cross-origin license verification URLs, including license tokens, despite the API's `Cache-Control: no-store` response.
+- **Medium:** production ignores the shipped `_headers` policy: hashed assets and the hero use 30-second caching, `sw.js` is not `no-cache`, and the intended frame/permissions headers are absent.
+- **Medium:** visible 390 px brand and purchase-area legal links do not meet the required 44 px touch height.
+- **Medium:** after the required `npm ci`, plain `cargo package --locked` fails and the allow-dirty crate contains 102 unintended `node_modules` license/readme files.
+- **Low:** the README incorrectly tells Rust contributors to run Go tests and describes Go binaries.
+
+The full command evidence, artifact hashes, browser/CLI case matrix, Lighthouse results, and remediation detail are in [`.factory/verification.md`](verification.md).
+
 ## What shipped
 
 - A Rust single-binary CLI with a small public adapter trait and built-in Supabase adapter.
@@ -48,4 +64,4 @@ The example verification intentionally exits 2 because its declared OAuth-server
 
 - Supabase is the only v1 provider. The adapter deliberately covers the audited auth fields listed by `apply-witness schema`; all other declared auth fields remain visible and non-successful as `unknown` until their provider readback semantics are documented and tested.
 - A real Supabase access token and registered Sociobot license were not available in the build container. Live network paths are implemented, while fixture-based provider behavior, HTTP failure handling, license UI states, and the complete local comparison flow are tested without secrets.
-- The factory still needs to publish platform binaries/crates, register the paid product, and deploy `dist/site/`. No registry, infrastructure, DNS, or billing mutation was performed here.
+- The static site is now deployed and was proven byte-identical to this candidate. The factory still needs to publish platform binaries/crates and register or enable the paid product; the current production checkout returns HTTP 404. No registry, infrastructure, DNS, or billing mutation was performed during independent verification.

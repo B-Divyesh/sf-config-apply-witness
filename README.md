@@ -4,10 +4,10 @@ Apply Witness is a conservative post-apply verification CLI for small teams usin
 
 ## Install
 
-Download a release binary for your platform, or build it with Go 1.23+:
+Download a release binary for your platform, or install it with Rust 1.85+:
 
 ```sh
-go install github.com/B-Divyesh/sf-config-apply-witness/cmd/apply-witness@latest
+cargo install --git https://github.com/B-Divyesh/sf-config-apply-witness --locked
 ```
 
 ## Usage
@@ -28,7 +28,7 @@ For CI and reproducible/offline checks, provide a captured Management API respon
 ```sh
 apply-witness verify --provider supabase \
   --config supabase/config.toml \
-  --readback testdata/auth-readback.json \
+  --readback examples/auth-readback.json \
   --json
 ```
 

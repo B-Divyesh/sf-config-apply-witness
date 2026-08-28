@@ -1,0 +1,8 @@
+{
+  "site_url": "https://app.example",
+  "uri_allow_list": "https://app.example/callback",
+  "jwt_exp": 3600,
+  "disable_signup": false,
+  "external_email_enabled": true,
+  "mailer_autoconfirm": false
+}

@@ -1,0 +1,12 @@
+[auth]
+site_url = "https://app.example"
+additional_redirect_urls = ["https://app.example/callback"]
+jwt_expiry = 3600
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+enable_confirmations = true
+
+[auth.oauth_server]
+enabled = true

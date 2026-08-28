@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://config-apply-witness.sociobot.in/sitemap.xml

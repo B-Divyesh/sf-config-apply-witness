@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Apply Witness verifies that declared Supabase configuration was actually applied, then emits a field-level receipt.">
+    <meta name="theme-color" content="#f3eedf">
+    <title>Apply Witness — proof after config apply</title>
+    <link rel="icon" href="/mark.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/src/style.css">
+    <script type="module" src="/src/main.ts"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to main content</a>
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="Apply Witness home"><span class="brand-mark" aria-hidden="true">AW</span><span>Apply Witness</span></a>
+      <nav aria-label="Primary">
+        <a href="#demo">Try the witness</a>
+        <a href="#install">Install</a>
+        <a class="nav-buy" href="#team">Team kit · $29</a>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="eyebrow"><span aria-hidden="true">●</span> Read back. Compare. Keep the receipt.</p>
+          <h1 id="hero-title">Success is a claim.<br><em>Readback is proof.</em></h1>
+          <p class="lede">Apply Witness checks every declared Supabase auth field against what the provider returns. Ignored fields stay visibly unknown—never green.</p>
+          <div class="hero-actions">
+            <a class="button primary" href="#install">Install the CLI</a>
+            <a class="button secondary" href="#demo">Run a local demo</a>
+          </div>
+          <ul class="trust-line" aria-label="Product guarantees">
+            <li>No telemetry</li><li>Read-only API</li><li>Secrets redacted</li>
+          </ul>
+        </div>
+        <figure class="press-figure">
+          <img src="/witness-press.webp" width="1200" height="800" alt="A halftone inspection press turning configuration lines into a checked proof receipt" fetchpriority="high">
+          <figcaption>01 / DECLARE → APPLY → WITNESS</figcaption>
+        </figure>
+      </section>
+
+      <section class="problem-band" aria-label="Why post-apply verification matters">
+        <p class="kicker">The false-success gap</p>
+        <p class="pullquote">A CLI can return <strong>success</strong> while sending none of a configuration section. A diff cannot show fields that never made the request.</p>
+        <div class="sequence" aria-label="Apply Witness workflow">
+          <span><b>01</b> Hash input</span><i aria-hidden="true">→</i><span><b>02</b> Fetch readback</span><i aria-hidden="true">→</i><span><b>03</b> Issue receipt</span>
+        </div>
+      </section>
+
+      <section class="demo-section" id="demo" aria-labelledby="demo-title">
+        <header class="section-head">
+          <div><p class="kicker">Live proof desk</p><h2 id="demo-title">See the conservative verdict</h2></div>
+          <p>This browser demo runs locally. Edit either side, then witness it. Nothing leaves this page.</p>
+        </header>
+        <div id="offline-note" class="state-note" hidden role="status">You’re offline. The local demo still works; purchase verification will resume when connected.</div>
+        <div class="demo-grid">
+          <div class="input-sheet">
+            <div class="sheet-label"><span>Declared · config.toml</span><span>INPUT</span></div>
+            <label for="declared">Declared auth configuration</label>
+            <textarea id="declared" spellcheck="false" rows="11">[auth]
+site_url = "https://app.example"
+jwt_expiry = 3600
+
+[auth.oauth_server]
+enabled = true</textarea>
+          </div>
+          <div class="input-sheet">
+            <div class="sheet-label"><span>Observed · API readback</span><span>READBACK</span></div>
+            <label for="readback">Provider JSON readback</label>
+            <textarea id="readback" spellcheck="false" rows="11">{
+  "site_url": "https://app.example",
+  "jwt_exp": 7200
+}</textarea>
+          </div>
+        </div>
+        <div class="demo-action">
+          <button class="button primary" type="button" id="run-witness">Run witness</button>
+          <span>Runs entirely in your browser</span>
+        </div>
+        <div id="demo-message" class="error-message" role="alert" tabindex="-1" hidden></div>
+        <section id="receipt" class="receipt" aria-labelledby="receipt-title" aria-live="polite">
+          <div class="receipt-empty">
+            <span class="empty-mark" aria-hidden="true">◎</span>
+            <h3 id="receipt-title">Receipt press is ready</h3>
+            <p>Run the witness to classify each declared field.</p>
+          </div>
+        </section>
+      </section>
+
+      <section id="install" class="install-section" aria-labelledby="install-title">
+        <div><p class="kicker">One binary. No daemon.</p><h2 id="install-title">Put proof in the pipeline.</h2><p>Use live provider readback after an apply, or a captured JSON response for deterministic tests. Exit code 2 blocks changed and unknown fields.</p></div>
+        <div class="terminal" aria-label="Installation and verification commands">
+          <div class="terminal-bar"><span>shell</span><button id="copy-command" type="button">Copy</button></div>
+          <pre><code id="install-command">cargo install --git https://github.com/B-Divyesh/sf-config-apply-witness --locked
+export SUPABASE_ACCESS_TOKEN="…"
+apply-witness verify \
+  --config supabase/config.toml \
+  --project-ref abcdefghijklmnop \
+  --receipt witness.json</code></pre>
+          <p id="copy-status" class="sr-only" aria-live="polite"></p>
+        </div>
+      </section>
+
+      <section class="outcomes" aria-labelledby="outcomes-title">
+        <p class="kicker">Three honest states</p>
+        <h2 id="outcomes-title">No optimistic guessing.</h2>
+        <div class="outcome-grid">
+          <article><span class="status applied">✓ Applied</span><h3>Match witnessed</h3><p>The declared value matches explicit provider readback after a documented normalization.</p></article>
+          <article><span class="status changed">! Changed</span><h3>Difference found</h3><p>The provider returned the field, but its observed value differs from the declaration.</p></article>
+          <article><span class="status unknown">? Unknown</span><h3>Proof unavailable</h3><p>The API omitted the field or no audited mapping exists. Unknown always fails the policy.</p></article>
+        </div>
+      </section>
+
+      <section id="team" class="team-section" aria-labelledby="team-title">
+        <div class="price-stamp" aria-label="29 US dollars, one time"><strong>$29</strong><span>ONE TIME</span></div>
+        <div class="team-copy">
+          <p class="kicker">Team Receipt Kit</p>
+          <h2 id="team-title">Batch the proof, not the risk.</h2>
+          <p>Unlock manifest-based multi-project runs, compact CI summaries, and local daily license caching. Single-project verification, JSON export, redaction, and every safety check stay free.</p>
+          <ul><li>One-time purchase, yours to keep</li><li>Works across your own machines</li><li>Sociobot / Dodo is merchant of record</li></ul>
+          <div class="license-actions">
+            <a class="button primary" href="https://api.sociobot.in/api/v1/products/config-apply-witness/checkout" rel="nofollow">Buy the Team kit · $29</a>
+            <button class="button secondary" id="show-restore" type="button" aria-expanded="false" aria-controls="restore-form">Have a license?</button>
+          </div>
+          <form id="restore-form" class="restore-form" hidden>
+            <label for="license-token">Paste your license token</label>
+            <div><input id="license-token" type="password" autocomplete="off" required><button type="submit" class="button primary">Verify license</button></div>
+          </form>
+          <p id="license-status" class="license-status" role="status">Free CLI active. No license stored.</p>
+          <p class="legal-line"><a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · Refunds are handled by the merchant of record and revoke the license.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <a class="brand" href="/" aria-label="Apply Witness home"><span class="brand-mark" aria-hidden="true">AW</span><span>Apply Witness</span></a>
+      <p>Evidence after apply. MIT licensed · v0.1.0</p>
+      <nav aria-label="Footer"><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="https://github.com/B-Divyesh/sf-config-apply-witness">Source</a></nav>
+    </footer>
+  </body>
+</html>

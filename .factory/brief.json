@@ -1,0 +1,11 @@
+{
+  "slug": "config-apply-witness",
+  "title": "Apply Witness",
+  "territory": "devtools-data",
+  "user": "Small teams wiring hosted developer platforms who need proof that declared configuration fields were actually accepted and applied, rather than trusting a success message or a partial diff.",
+  "smallest_useful_product": "A plugin-based CLI with one initial Supabase adapter that records a config input hash, fetches safe readback, and produces field-level applied/unknown/changed receipts.",
+  "success_measure": "In a seeded test suite of ignored and normalized fields, the tool marks 100% of non-applied fields as non-successful rather than green.",
+  "artifact_class": "cli",
+  "monetization": "one-time",
+  "constraints": "Use read-only provider scopes where possible; redact secrets; never infer that an unreadable field is safely applied; adapters must respect provider APIs and terms."
+}

@@ -53,6 +53,28 @@ describe('release policy regressions', () => {
     expect(cachePut).not.toHaveBeenCalled();
   });
 
+  it('never intercepts a same-origin checkout return containing a license', () => {
+    const listeners = new Map<string, (event: { request: Request; respondWith: (response: Promise<Response>) => void }) => void>();
+    const fakeSelf = {
+      location: { origin: 'https://config-apply-witness.sociobot.in' },
+      addEventListener: (name: string, listener: (event: { request: Request; respondWith: (response: Promise<Response>) => void }) => void) => listeners.set(name, listener),
+      skipWaiting: vi.fn(),
+      clients: { claim: vi.fn() }
+    };
+    const fakeCaches = { open: vi.fn(), keys: vi.fn(), delete: vi.fn(), match: vi.fn() };
+    const source = renderServiceWorker('apply-witness-test', ['/index.html']);
+    new Function('self', 'caches', 'fetch', source)(fakeSelf, fakeCaches, vi.fn());
+    const respondWith = vi.fn();
+
+    listeners.get('fetch')!({
+      request: new Request('https://config-apply-witness.sociobot.in/?license=private-token'),
+      respondWith
+    });
+
+    expect(respondWith).not.toHaveBeenCalled();
+    expect(fakeCaches.open).not.toHaveBeenCalled();
+  });
+
   it('honors no-store on same-origin responses', async () => {
     let fetchListener: ((event: { request: Request; respondWith: (response: Promise<Response>) => void }) => void) | undefined;
     const cachePut = vi.fn();

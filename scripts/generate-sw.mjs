@@ -11,6 +11,7 @@ async function files(dir) {
 const assetPaths = (await files(root)).filter(path => !path.endsWith('sw.js') && !path.endsWith('.map') && !path.endsWith('staticwebapp.config.json')).sort();
 const urls = assetPaths.map(path => '/' + relative(root, path));
 const digest = createHash('sha256');
+digest.update(renderServiceWorker.toString());
 for (const path of assetPaths) {
   digest.update(relative(root, path));
   digest.update(await readFile(path));

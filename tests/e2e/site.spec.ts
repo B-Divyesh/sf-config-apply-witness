@@ -78,6 +78,26 @@ test('service worker keeps license verification URLs out of Cache Storage', asyn
   expect(cacheNames.some(name => /^apply-witness-[0-9a-f]{12}$/.test(name))).toBe(true);
 });
 
+test('checkout return strips and never caches its license query', async ({ page, context }) => {
+  await context.route('https://api.sociobot.in/api/v1/products/config-apply-witness/verify?license=return-cache-regression-token', route => route.fulfill({
+    status: 200,
+    headers: { 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ valid: false, reason: 'invalid' })
+  }));
+  await page.goto('/');
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await page.reload();
+  await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
+  await page.goto('/?license=return-cache-regression-token');
+  await expect(page).toHaveURL('/');
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('sb_license:config-apply-witness'))).toBe('return-cache-regression-token');
+  const cachedUrls = await page.evaluate(async () => {
+    const keys = await caches.keys();
+    return (await Promise.all(keys.map(async key => (await (await caches.open(key)).keys()).map(request => request.url)))).flat();
+  });
+  expect(cachedUrls.some(url => url.includes('license='))).toBe(false);
+});
+
 test('offline reload preserves the shell and local witness', async ({ page, context }) => {
   await page.goto('/');
   await page.evaluate(() => navigator.serviceWorker.ready);

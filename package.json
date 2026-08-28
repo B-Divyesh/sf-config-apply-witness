@@ -9,9 +9,11 @@
     "build:site": "vite build --config site/vite.config.ts && node scripts/generate-sw.mjs",
     "build:cli": "cargo build --release && node scripts/copy-binary.mjs",
     "build": "npm run build:site && npm run build:cli",
-    "test:unit": "vitest run tests/witness.test.ts",
+    "test:unit": "vitest run tests/*.test.ts",
     "test:e2e": "playwright test",
     "test": "cargo test --all-targets && npm run test:unit && npm run test:e2e",
+    "typecheck": "tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --lib ES2022,DOM,DOM.Iterable site/src/main.ts site/src/witness.ts",
+    "lint": "cargo fmt --all -- --check && cargo clippy --all-targets -- -D warnings && npm run typecheck",
     "preview": "vite preview --config site/vite.config.ts"
   },
   "files": [

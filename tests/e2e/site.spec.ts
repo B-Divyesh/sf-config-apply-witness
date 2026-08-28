@@ -27,10 +27,65 @@ test('empty and invalid states explain the next action', async ({ page }) => {
   await expect(page.getByRole('alert')).toContainText('not valid JSON');
 });
 
+test('keyboard flow exposes focus and operates the demo and restore form', async ({ page }) => {
+  await page.goto('/');
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('link', { name: 'Skip to main content' })).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('main')).toBeFocused();
+  await page.getByRole('button', { name: 'Run witness' }).focus();
+  await expect(page.getByRole('button', { name: 'Run witness' })).toHaveCSS('outline-style', 'solid');
+  await page.keyboard.press('Space');
+  await expect(page.getByText('Witness receipt')).toBeVisible();
+  await page.getByRole('button', { name: 'Have a license?' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByLabel('Paste your license token')).toBeFocused();
+});
+
 test('mobile layout has no horizontal overflow and legal routes load', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
   expect(overflow).toBe(false);
+  const undersized = await page.locator('a, button, input, textarea').evaluateAll(elements => elements.flatMap(element => {
+    const style = getComputedStyle(element);
+    const box = element.getBoundingClientRect();
+    if (style.display === 'none' || style.visibility === 'hidden' || box.width === 0 || box.height === 0) return [];
+    return box.width < 44 || box.height < 44 ? [{ label: element.getAttribute('aria-label') || element.textContent?.trim() || element.tagName, width: box.width, height: box.height }] : [];
+  }));
+  expect(undersized).toEqual([]);
   await page.goto('/privacy/'); await expect(page.locator('h1')).toHaveText('Privacy');
   await page.goto('/terms/'); await expect(page.locator('h1')).toHaveText('Terms');
+});
+
+test('service worker keeps license verification URLs out of Cache Storage', async ({ page, context }) => {
+  await context.route('https://api.sociobot.in/api/v1/products/config-apply-witness/verify?license=cache-regression-token', route => route.fulfill({
+    status: 200,
+    headers: { 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ valid: false, reason: 'invalid' })
+  }));
+  await page.goto('/');
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await page.reload();
+  await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
+  await page.evaluate(() => fetch('https://api.sociobot.in/api/v1/products/config-apply-witness/verify?license=cache-regression-token'));
+  const cachedUrls = await page.evaluate(async () => {
+    const keys = await caches.keys();
+    return (await Promise.all(keys.map(async key => (await (await caches.open(key)).keys()).map(request => request.url)))).flat();
+  });
+  expect(cachedUrls.some(url => url.includes('license=cache-regression-token'))).toBe(false);
+  const cacheNames = await page.evaluate(() => caches.keys());
+  expect(cacheNames.some(name => /^apply-witness-[0-9a-f]{12}$/.test(name))).toBe(true);
+});
+
+test('offline reload preserves the shell and local witness', async ({ page, context }) => {
+  await page.goto('/');
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await page.reload();
+  await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
+  await context.setOffline(true);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await expect(page.getByRole('status').filter({ hasText: 'offline' })).toBeVisible();
+  await page.getByRole('button', { name: 'Run witness' }).click();
+  await expect(page.getByText('Witness receipt')).toBeVisible();
 });

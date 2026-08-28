@@ -77,4 +77,4 @@ if (returnedLicense) { localStorage.setItem(tokenKey, returnedLicense); query.de
 const storedLicense = localStorage.getItem(tokenKey);
 if (storedLicense) { const cached = cachedVerdict(); if (cached?.valid) licenseStatus.textContent = 'Team Receipt Kit active from your verified license.'; void verifyLicense(storedLicense); }
 
-if ('serviceWorker' in navigator && location.protocol === 'https:') void navigator.serviceWorker.register('/sw.js');
+if ('serviceWorker' in navigator && window.isSecureContext) void navigator.serviceWorker.register('/sw.js');

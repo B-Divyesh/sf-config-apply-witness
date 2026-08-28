@@ -1,5 +1,8 @@
 use std::process::Command;
 
+#[cfg(unix)]
+use std::{fs, os::unix::fs::PermissionsExt, time::SystemTime};
+
 fn binary() -> Command {
     Command::new(env!("CARGO_BIN_EXE_apply-witness"))
 }
@@ -57,4 +60,41 @@ fn missing_credentials_is_an_operational_error() {
             .unwrap()
             .contains("SUPABASE_ACCESS_TOKEN")
     );
+}
+
+#[cfg(unix)]
+#[test]
+fn replacing_a_receipt_forces_owner_only_permissions() {
+    let unique = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_nanos();
+    let path = std::env::temp_dir().join(format!(
+        "apply-witness-permissions-{}-{unique}.json",
+        std::process::id()
+    ));
+    fs::write(&path, b"previous receipt\n").unwrap();
+    fs::set_permissions(&path, fs::Permissions::from_mode(0o644)).unwrap();
+
+    let output = binary()
+        .args([
+            "verify",
+            "--config",
+            "examples/supabase-config.toml",
+            "--readback",
+            "examples/auth-readback.json",
+            "--receipt",
+        ])
+        .arg(&path)
+        .arg("--json")
+        .output()
+        .unwrap();
+
+    assert_eq!(output.status.code(), Some(2));
+    assert_eq!(
+        fs::metadata(&path).unwrap().permissions().mode() & 0o777,
+        0o600
+    );
+    assert_eq!(fs::read(&path).unwrap(), output.stdout);
+    fs::remove_file(path).unwrap();
 }

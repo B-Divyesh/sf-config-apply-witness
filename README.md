@@ -66,13 +66,13 @@ Use `apply-witness license verify --token …` to validate and cache a purchase 
 ## Develop and verify
 
 ```sh
-go test ./...
-npm install
+cargo test --all-targets
+npm ci
 npm test
 npm run build
 ```
 
-`npm run build` compiles the Go binaries into `dist/bin/` and the static landing/docs site into `dist/site/`. `npm pack` creates the ready-to-publish documentation package; registry publishing and releases are handled by the factory.
+`npm run build` compiles the Rust binary into `dist/bin/` and the static landing/docs site into `dist/site/`. `cargo package --locked` and `npm pack` create the ready-to-publish artifacts; registry publishing and releases are handled by the factory.
 
 ## Privacy and security
 

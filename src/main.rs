@@ -290,7 +290,7 @@ fn write_receipt(path: &Path, receipt: &Receipt) -> Result<(), String> {
     data.push(b'\n');
     #[cfg(unix)]
     {
-        use std::os::unix::fs::OpenOptionsExt;
+        use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
         let mut file = fs::OpenOptions::new()
             .write(true)
             .create(true)
@@ -298,6 +298,8 @@ fn write_receipt(path: &Path, receipt: &Receipt) -> Result<(), String> {
             .mode(0o600)
             .open(path)
             .map_err(|e| format!("write receipt: {e}"))?;
+        file.set_permissions(fs::Permissions::from_mode(0o600))
+            .map_err(|e| format!("secure receipt permissions: {e}"))?;
         file.write_all(&data)
             .map_err(|e| format!("write receipt: {e}"))?;
     }

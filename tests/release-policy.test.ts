@@ -23,6 +23,31 @@ describe('release policy regressions', () => {
     expect(config.globalHeaders['Permissions-Policy']).toContain('camera=()');
   });
 
+  it('deletes obsolete Apply Witness caches during activation', async () => {
+    let activateListener: ((event: { waitUntil: (work: Promise<unknown>) => void }) => void) | undefined;
+    const cacheDelete = vi.fn(async () => true);
+    const fakeSelf = {
+      location: { origin: 'https://config-apply-witness.sociobot.in' },
+      addEventListener: (name: string, listener: typeof activateListener) => { if (name === 'activate') activateListener = listener; },
+      skipWaiting: vi.fn(),
+      clients: { claim: vi.fn(async () => undefined) }
+    };
+    const fakeCaches = {
+      open: vi.fn(),
+      keys: vi.fn(async () => ['apply-witness-v1', 'apply-witness-current', 'unrelated-cache']),
+      delete: cacheDelete,
+      match: vi.fn()
+    };
+    const source = renderServiceWorker('apply-witness-current', ['/index.html']);
+    new Function('self', 'caches', 'fetch', source)(fakeSelf, fakeCaches, vi.fn());
+    let activation: Promise<unknown> | undefined;
+    activateListener!({ waitUntil: work => { activation = work; } });
+    await activation;
+
+    expect(cacheDelete).toHaveBeenCalledOnce();
+    expect(cacheDelete).toHaveBeenCalledWith('apply-witness-v1');
+  });
+
   it('never intercepts or caches cross-origin license requests', () => {
     const listeners = new Map<string, (event: { request: Request; respondWith: (response: Promise<Response>) => void }) => void>();
     const cachePut = vi.fn();

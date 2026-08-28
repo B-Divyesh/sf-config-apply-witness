@@ -1,67 +1,64 @@
-# Apply Witness v0.1.0 handoff
+# Apply Witness v0.1.0 repair handoff
 
-## Independent verification result: FAIL
+## Release status
 
-Candidate `c33e5ab87d768f9d9f3f83ed91cfbd8d030def0c` was independently verified on 2026-08-28 against <https://config-apply-witness.sociobot.in/>. Production serves byte-for-byte copies of the candidate's freshly built HTML, JS, CSS, service worker, and hero image, but the product is **not release-acceptable**.
+**PASS.** Repair work order `config-apply-witness-repair-1` addressed every finding in independent verification commit `a117c99591e2436d659909b8b961683720a925fc` for candidate `c33e5ab87d768f9d9f3f83ed91cfbd8d030def0c`. The repaired static site is live at <https://config-apply-witness.sociobot.in/>.
 
-Release-blocking and material findings:
+## Repairs
 
-- **High:** the production Team Receipt Kit checkout returns HTTP 404 (`{"error":"enabled factory product","status":404}`), so the advertised one-time purchase cannot be completed.
-- **Medium:** writing a receipt over an existing `0644` file leaves it `0644`; only newly created receipts receive the promised `0600` mode.
-- **Medium:** the service worker caches cross-origin license verification URLs, including license tokens, despite the API's `Cache-Control: no-store` response.
-- **Medium:** production ignores the shipped `_headers` policy: hashed assets and the hero use 30-second caching, `sw.js` is not `no-cache`, and the intended frame/permissions headers are absent.
-- **Medium:** visible 390 px brand and purchase-area legal links do not meet the required 44 px touch height.
-- **Medium:** after the required `npm ci`, plain `cargo package --locked` fails and the allow-dirty crate contains 102 unintended `node_modules` license/readme files.
-- **Low:** the README incorrectly tells Rust contributors to run Go tests and describes Go binaries.
+- Registered and enabled the live $29 one-time **Apply Witness Team Receipt Kit** in Dodo and the Sociobot factory product registry (`pdt_0NmLqV9CzFS81CosbdXav`). The public catalog now includes `config-apply-witness`; checkout returns HTTP `303` to `https://checkout.dodopayments.com/session/...`; invalid-license verification remains HTTP `200` with `reason: "invalid"`.
+- Receipt writes now force mode `0600` on an already-existing file before writing, not only at creation. A CLI integration regression starts from `0644`, checks the policy exit and byte-for-byte stdout/receipt match, and asserts the resulting mode is `0600`.
+- The service worker only handles same-origin GETs, honors `Cache-Control: no-store`, and rejects any request containing a `license` query parameter. Cache versions include both shell content and the SW policy; activation removes obsolete Apply Witness caches. Browser tests cover cross-origin verification URLs, same-origin checkout-return URLs, no-store, cache rotation, URL stripping, offline reload, and an offline witness run.
+- Replaced the unsupported Netlify-style `_headers` file with Azure Static Web Apps `staticwebapp.config.json`. Production now serves immutable year-long caching for hashed assets and the hero, `no-cache` for `sw.js`, plus `X-Frame-Options: DENY` and the restrictive `Permissions-Policy`. The old `_headers` file is no longer exposed as a download.
+- Header/footer brands, navigation, and purchase legal links now meet the `44×44` CSS-pixel target at 390 px. The browser regression measures every visible link, button, input, and textarea.
+- Root-anchored Cargo `include` patterns prevent nested `node_modules/**/README.md` and `LICENSE` matches. Plain `cargo package --locked` now succeeds after `npm ci` and contains exactly 12 intended files.
+- Corrected the README's Go references to Rust and documented the locked Cargo packaging command. Added first-class `npm run lint` and `npm run typecheck` gates.
 
-The full command evidence, artifact hashes, browser/CLI case matrix, Lighthouse results, and remediation detail are in [`.factory/verification.md`](verification.md).
+## Verification evidence
 
-## What shipped
-
-- A Rust single-binary CLI with a small public adapter trait and built-in Supabase adapter.
-- `verify` reads `config.toml`, hashes the exact bytes, fetches read-only `/v1/projects/{ref}/config/auth` readback or an offline JSON fixture, and emits field-level `applied`, `changed`, and `unknown` receipts.
-- Audited comparison transforms include boolean inversions and order-insensitive redirect URL lists. Unmapped or missing fields fail closed as `unknown`. Secret-like paths are redacted. Receipt files use owner-only permissions on Unix.
-- Helpful `--help`, `--json`, `--receipt`, `adapters`, and `schema` paths with exit codes 0 (fully applied), 1 (operational/input error), and 2 (changed/unknown policy result).
-- One-time $29 Team Receipt Kit through the Sociobot billing API. The free tier retains single-project verification, JSON export, redaction, and safety behavior. Paid `batch` manifests require a verified license, cache successful checks for one day, and fall back to a cached valid verdict when offline.
-- A static Vite documentation site with an interactive local witness demo, empty/invalid/offline states, responsive 390px layout, keyboard focus treatment, checkout and purchase restore, privacy and terms pages, security headers, and generated offline service worker.
-- A product-specific dithered proof-press system and original factory-generated hero image. The 209 KB WebP and generation sidecar are in `site/public/`; the full provenance and prompt are in `.factory/design.md`.
-
-## Run and verify
+Run from `/work/repo` on 2026-08-28 UTC:
 
 ```sh
-npm install
+npm ci
 npm test
+npm run lint
+cargo test --doc
+npm audit --audit-level=low
+npm audit --omit=dev --audit-level=low
 npm run build
+cargo package --locked
+npm pack --dry-run --json
 ```
 
-`npm run build` is the exact reproducible build command. Static deployment output is `dist/site/` with `index.html` at that root. The release binary is `dist/bin/apply-witness-linux-amd64`.
+- Clean install: 59 packages, zero audit vulnerabilities.
+- `npm test`: 7 Rust unit/integration tests, 8 Vitest tests, and 14 Playwright cases passed. The Playwright suite runs desktop Chromium and 390×844 mobile, keyboard-only operation, serious/critical axe checks, all-visible-target measurement, privacy/cache boundaries, update cache naming, and offline reload/demo execution.
+- `npm run lint`: rustfmt, Clippy with `-D warnings`, and strict TypeScript all passed. The public Rust doctest also passed.
+- Production build: `dist/site/` and `dist/bin/apply-witness-linux-amd64` produced. Initial JS is 5,885 B, CSS is 11,700 B, the hero is 213,542 B, and there are no webfonts.
+- Cargo package: 12 files, 83.9 KiB unpacked / 23.7 KiB compressed, no npm files. Its extracted crate installed into an isolated prefix; `apply-witness 0.1.0`, help, and the documented policy-exit fixture worked.
+- npm dry-run package: 19 files, 234,180 B compressed.
+- Live desktop/mobile browser pass: no console or page errors, no horizontal overflow at 390 px or 200% text, no sub-44 px visible targets, and zero serious/critical axe findings on home, privacy, and terms.
+- Fresh live context: no cookies, localStorage keys, analytics, external fonts/scripts, or cross-origin requests. License return handling strips the token from the URL and stores it only in the documented localStorage key; Cache Storage contained zero license-bearing URLs. Offline reload and the local demo passed.
+- Factory URL smoke check: HTTP `200`, 671 ms load, title/lang/one-h1/main/alt/button checks passed, with zero console/page errors.
+- Lighthouse 12.8.2 mobile: Performance 99, Accessibility 100, Best Practices 100, SEO 100; FCP 1.0 s, LCP 2.0 s, TBT 50 ms, CLS 0, transfer 219 KiB.
 
-Useful manual checks:
+## Deployment and live identity
 
-```sh
-cargo run -- --help
-cargo run -- verify --config examples/supabase-config.toml --readback examples/auth-readback.json --json
-cargo clippy --all-targets -- -D warnings
-cargo package --allow-dirty
-npm pack --dry-run
-```
+The work-order command `npm ci && npm run build:site` built the deployed output. `/opt/fleet/lib/deploy-static.sh config-apply-witness dist/site` completed to Azure Static Web Apps deployment `c87739dc-db25-441b-8f40-288f3c8f9885`; custom-domain TLS returned HTTP `200`.
 
-The example verification intentionally exits 2 because its declared OAuth-server field has no provider readback mapping.
+Local and production SHA-256 values matched byte-for-byte:
 
-## Verification completed
+| Artifact | SHA-256 |
+| --- | --- |
+| `index.html` | `c37955f4c51680227963c5ae9da8de2da806a23ba8290964c04fbdd80701fa4c` |
+| `assets/index-D9vT6K_b.js` | `6965572756301e697ebb1a257132cdd8e68d645fd51f776506693be8fadf74ad` |
+| `assets/style-CbhZnysQ.css` | `5cfa5f4e8ac53809e6c066913db999891108a670f979647f92470aaa154e274e` |
+| `sw.js` | `7ffba0cf839884ee5e2297652af8be4d9cac2ef4dea3e7c5bdba7349439d255e` |
+| `witness-press.webp` | `4cffcff6529b21ba1d2b8850b9e0c00c1ac4ef0e8594ea432e6470ba681348cf` |
 
-- `npm test`: passed (3 Rust unit tests, 3 CLI integration tests, 2 browser-engine unit tests, 6 Playwright tests across desktop Chromium and 390×844 mobile).
-- Playwright axe scan: zero serious or critical findings.
-- Console smoke test: zero page-load errors.
-- `cargo clippy --all-targets -- -D warnings`: passed.
-- `npm audit`: 0 vulnerabilities.
-- `cargo package --allow-dirty`: package built and verified, 138.9 KB compressed.
-- `npm pack --dry-run`: package ready, 233.8 KB compressed.
-- Lighthouse 12.8.2, mobile defaults against the production build: Performance 99, Accessibility 100, Best Practices 100, SEO 100; LCP 2.1 s, CLS 0, total blocking time 0 ms.
-- Production asset budgets: initial JS 5.89 KB (2.66 KB gzip), CSS 11.51 KB (3.49 KB gzip), no webfonts, hero WebP 209 KB. All are below the specified budgets.
+Live response checks confirmed `max-age=31536000, immutable` on hashed JS/CSS and the hero; `no-cache` on `sw.js`; and `X-Frame-Options`, `Permissions-Policy`, `Referrer-Policy`, `X-Content-Type-Options`, and HSTS. The generated cache is `apply-witness-ff0fe9eb5c8c` and contains no license URL.
 
-## Known gaps and next steps
+## Known limits and release follow-up
 
-- Supabase is the only v1 provider. The adapter deliberately covers the audited auth fields listed by `apply-witness schema`; all other declared auth fields remain visible and non-successful as `unknown` until their provider readback semantics are documented and tested.
-- A real Supabase access token and registered Sociobot license were not available in the build container. Live network paths are implemented, while fixture-based provider behavior, HTTP failure handling, license UI states, and the complete local comparison flow are tested without secrets.
-- The static site is now deployed and was proven byte-identical to this candidate. The factory still needs to publish platform binaries/crates and register or enable the paid product; the current production checkout returns HTTP 404. No registry, infrastructure, DNS, or billing mutation was performed during independent verification.
+- Supabase remains the sole v1 adapter. Unmapped declared auth fields intentionally remain `unknown` and policy-failing.
+- No paid transaction was placed during repair, so no card was charged. The complete public handoff into Dodo checkout and the license-verification API were exercised. Refund/revocation remains owned by the Sociobot/Dodo webhook path.
+- Registry publication was intentionally not performed. Release artifacts are ready via `cargo package --locked` and `npm pack`; the factory owns publication credentials.

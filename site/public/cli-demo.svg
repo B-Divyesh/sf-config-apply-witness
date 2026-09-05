@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" role="img" aria-labelledby="title description">
+  <title id="title">Apply Witness CLI sample recording</title>
+  <desc id="description">A terminal runs apply-witness demo. The bundled sample reports six applied fields and one unknown field, then prints a temporary receipt path.</desc>
+  <style>
+    .bg{fill:#171815}.bar{fill:#30322d}.dot-a{fill:#e05238}.dot-b{fill:#d8a849}.dot-c{fill:#24613b}.prompt{fill:#8dd4c8}.plain{fill:#f8f2e1}.muted{fill:#b8b7ae}.ok{fill:#87c99a}.warn{fill:#e6bb65}.line{opacity:0;animation:show .01s forwards}.one{animation-delay:.2s}.two{animation-delay:.7s}.three{animation-delay:1.2s}.four{animation-delay:1.7s}.five{animation-delay:2.2s}.six{animation-delay:2.7s}.seven{animation-delay:3.2s}@keyframes show{to{opacity:1}}@media (prefers-reduced-motion:reduce){.line{opacity:1;animation:none}}
+  </style>
+  <rect class="bg" width="960" height="540"/>
+  <rect class="bar" width="960" height="56"/>
+  <circle class="dot-a" cx="30" cy="28" r="8"/><circle class="dot-b" cx="56" cy="28" r="8"/><circle class="dot-c" cx="82" cy="28" r="8"/>
+  <text class="muted" x="480" y="34" text-anchor="middle" font-family="ui-monospace, monospace" font-size="18">apply-witness demo</text>
+  <g font-family="ui-monospace, monospace" font-size="22">
+    <text class="line one" x="44" y="108"><tspan class="prompt">$ </tspan><tspan class="plain">apply-witness demo</tspan></text>
+    <text class="line two plain" x="44" y="160">APPLY WITNESS  UNKNOWN</text>
+    <text class="line three ok" x="44" y="212">✓ applied   auth.site_url</text>
+    <text class="line four warn" x="44" y="264">? unknown   auth.oauth_server.enabled</text>
+    <text class="line five plain" x="44" y="316">6 applied  0 changed  1 unknown</text>
+    <text class="line six muted" x="44" y="368">receipt written to</text>
+    <text class="line seven plain" x="44" y="408">/tmp/apply-witness-demo…/witness-receipt.json</text>
+  </g>
+</svg>

@@ -44,8 +44,15 @@ export function runWitness(declaredText: string, readbackText: string): DemoFiel
     const raw = readback[mapping.key];
     if (mapping.invert && typeof raw !== 'boolean') return { path, status: 'unknown', detail: 'Provider returned the wrong value type' };
     const observed = mapping.invert ? !raw : raw;
+    if (isUnsafeBrowserInteger(declared[path]) || isUnsafeBrowserInteger(observed)) {
+      return { path, status: 'unknown', detail: 'Large integers need the CLI for an exact comparison' };
+    }
     return Object.is(declared[path], observed)
       ? { path, status: 'applied', detail: 'Declared value matches readback' }
       : { path, status: 'changed', detail: `Declared ${JSON.stringify(declared[path])}; read back ${JSON.stringify(observed)}` };
   });
+}
+
+function isUnsafeBrowserInteger(value: unknown): boolean {
+  return typeof value === 'number' && Number.isInteger(value) && !Number.isSafeInteger(value);
 }

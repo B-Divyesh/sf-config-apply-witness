@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Try a safe sample that compares declared Supabase configuration with provider readback.">
+    <meta name="theme-color" content="#f3eedf">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Demo — Apply Witness">
+    <meta property="og:description" content="Try a safe sample receipt for Supabase configuration verification.">
+    <meta property="og:image" content="https://config-apply-witness.sociobot.in/social-card.webp">
+    <meta property="og:url" content="https://config-apply-witness.sociobot.in/demo/">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Demo — Apply Witness">
+    <meta name="twitter:description" content="Try a safe sample receipt for Supabase configuration verification.">
+    <meta name="twitter:image" content="https://config-apply-witness.sociobot.in/social-card.webp">
+    <link rel="canonical" href="https://config-apply-witness.sociobot.in/demo/">
+    <link rel="icon" href="/mark.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="stylesheet" href="/src/style.css">
+    <script type="module" src="/src/demo.ts"></script>
+    <title>Demo — Apply Witness</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to main content</a>
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="Apply Witness home"><span class="brand-mark" aria-hidden="true">AW</span><span>Apply Witness</span></a>
+      <nav aria-label="Primary"><a href="/demo/" aria-current="page">Demo</a><a href="/#cli">CLI</a><a href="/privacy/">Privacy</a></nav>
+    </header>
+    <main id="main" class="demo-page" tabindex="-1">
+      <section class="demo-intro" aria-labelledby="demo-title">
+        <p class="eyebrow"><span aria-hidden="true">●</span> Safe sample</p>
+        <h1 id="demo-title">Check sample Supabase configuration</h1>
+        <p>See applied, changed, and unknown fields now. Edit the sample, then run it again.</p>
+      </section>
+      <section class="demo-banner" aria-label="Demo mode">
+        <p><strong>Demo — sample data, nothing is saved</strong><span>Your edits stay in the separate demo browser storage.</span></p>
+        <div><button class="button secondary" id="reset-demo" type="button">Reset demo</button><a class="button primary" id="start-real" href="/">Start for real</a></div>
+      </section>
+      <div id="offline-note" class="state-note" hidden role="status">You are offline. The local sample still works.</div>
+      <section class="demo-section" aria-labelledby="receipt-title">
+        <div class="demo-grid">
+          <div class="input-sheet">
+            <div class="sheet-label"><span>Declared · config.toml</span><span>INPUT</span></div>
+            <label for="declared">Declared auth configuration</label>
+            <textarea id="declared" spellcheck="false" rows="11"></textarea>
+          </div>
+          <div class="input-sheet">
+            <div class="sheet-label"><span>Observed · API readback</span><span>READBACK</span></div>
+            <label for="readback">Provider JSON readback</label>
+            <textarea id="readback" spellcheck="false" rows="11"></textarea>
+          </div>
+        </div>
+        <div class="demo-action"><button class="button primary" type="button" id="run-witness">Run sample witness</button><span>Runs in this browser. It makes no provider request.</span></div>
+        <div id="demo-message" class="error-message" role="alert" tabindex="-1" hidden></div>
+        <section id="receipt" class="receipt" aria-live="polite"><h2 id="receipt-title" class="sr-only">Sample witness receipt</h2></section>
+      </section>
+    </main>
+    <footer>
+      <a class="brand" href="/" aria-label="Apply Witness home"><span class="brand-mark" aria-hidden="true">AW</span><span>Apply Witness</span></a>
+      <p>Verify Supabase config after apply. Built by Param Factory · v0.1.0</p>
+      <nav aria-label="Footer"><a href="/demo/">Demo</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="https://github.com/B-Divyesh/sf-config-apply-witness">Source</a></nav>
+    </footer>
+  </body>
+</html>

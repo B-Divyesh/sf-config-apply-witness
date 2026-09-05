@@ -1,18 +1,32 @@
 # Apply Witness
 
-Apply Witness is a conservative post-apply verification CLI for small teams using hosted developer platforms. It compares declared Supabase configuration with provider readback and produces a field-level receipt: **applied**, **changed**, or **unknown**. An unreadable field is never reported as applied.
+Apply Witness verifies Supabase configuration after an apply. It is for small platform teams who need to know whether declared auth settings were accepted.
+
+The CLI compares declared settings with provider readback and writes a field-level receipt. A field is `applied`, `changed`, or `unknown`. Changed, omitted, and unreadable fields never pass as applied.
+
+## Try the sample
+
+Open the one-click browser sandbox at [config-apply-witness.sociobot.in/demo/](https://config-apply-witness.sociobot.in/demo/). It starts with a populated receipt, uses the `demo:config-apply-witness:` browser-storage prefix, and never writes normal license storage. See [.factory/demo.md](.factory/demo.md) for reset and isolation details.
+
+The CLI ships the same kind of useful sample:
+
+```sh
+apply-witness demo
+```
+
+It copies the bundled configuration and readback JSON to a new system temporary directory, runs an offline verification, writes a receipt there, and prints the path. The sample includes an unmapped OAuth field, so it exits `2` rather than falsely reporting success.
 
 ## Install
 
-Download a release binary for your platform, or install it with Rust 1.85+:
+Download a release binary for your platform, or install with Rust:
 
 ```sh
 cargo install --git https://github.com/B-Divyesh/sf-config-apply-witness --locked
 ```
 
-## Usage
+## Verify a configuration
 
-Verify against live Supabase Management API readback. The access token is read from the environment and is never stored or printed:
+For live Supabase readback, put the provider token in the environment. The CLI sends a read-only Management API request and does not print or store the provider token.
 
 ```sh
 export SUPABASE_ACCESS_TOKEN="your-personal-access-token"
@@ -23,7 +37,7 @@ apply-witness verify \
   --receipt witness-receipt.json
 ```
 
-For CI and reproducible/offline checks, provide a captured Management API response:
+For deterministic CI or an offline check, use a captured readback response instead:
 
 ```sh
 apply-witness verify --provider supabase \
@@ -32,7 +46,9 @@ apply-witness verify --provider supabase \
   --json
 ```
 
-Exit code `0` means every declared readable field was applied. `2` means at least one field is changed or unknown. `1` means the input, credentials, or provider request failed. JSON output is written to stdout; diagnostics go to stderr. The receipt includes a SHA-256 input hash, timestamp, provider/project identity, summary, and redacted field results.
+Exit `0` means every declared readable field matched. Exit `2` means at least one field changed or is unknown. Exit `1` means the input, credentials, or request failed. JSON is written to stdout and diagnostics to stderr.
+
+Use these commands to inspect the adapter:
 
 ```sh
 apply-witness adapters
@@ -40,43 +56,53 @@ apply-witness schema --provider supabase
 apply-witness verify --help
 ```
 
-The free CLI verifies one configuration at a time and exports full receipts. The optional one-time Team Receipt Kit adds `batch` manifests and compact CI summaries. Accessibility, safety, secret redaction, and receipt export remain free.
+`schema` prints every audited declaration-to-readback mapping and its normalization. It includes trimmed string comparison, URL-set comparison that ignores order, and documented inverted booleans. Integer values are compared exactly; browser samples treat large integers as unknown and direct users to the CLI.
 
-## Supported Supabase fields
+## Receipts and redaction
 
-The v1 adapter deliberately supports a small, audited mapping of `[auth]` and `[auth.email]` settings returned by `GET /v1/projects/{ref}/config/auth`. `apply-witness schema --provider supabase` prints the exact paths and transformations. Other declared fields are included as `unknown`, never silently skipped. Environment substitutions and secret-like paths are redacted in all output.
+A receipt contains an input SHA-256 hash, timestamp, provider identity, summary, and field results. Receipt files use owner-only permissions on supported Unix systems, including when overwriting an older file.
 
-## Batch manifests (Team Receipt Kit)
+Paths that look like secrets, and `env(...)` substitutions, are redacted from output. Other declared `[auth]` paths without an audited provider mapping are reported as `unknown`.
 
-```json
-{
-  "jobs": [
-    {"name":"staging", "provider":"supabase", "project_ref":"abc", "config":"supabase/config.toml"},
-    {"name":"production", "provider":"supabase", "project_ref":"xyz", "config":"supabase/config.toml"}
-  ]
-}
-```
+## Team Receipt Kit
+
+Single-project verification and receipt export are free. The Team Receipt Kit costs **$29 USD once** and adds batch manifests with compact CI summaries.
 
 ```sh
 APPLY_WITNESS_LICENSE="license-token" apply-witness batch --manifest witness-jobs.json --json
 ```
 
-Use `apply-witness license verify --token …` to validate and cache a purchase locally. License validation uses only Sociobot's product API; payment details never reach this tool.
+Validate a purchase once to cache its verdict for later batch runs:
+
+```sh
+apply-witness license verify --token "license-token"
+```
+
+The CLI verifies licenses only with Sociobot’s product API. A fresh valid verdict is reused for up to one day. On supported Unix systems the CLI license cache uses owner-only permissions, including after an overwrite. Restore a website purchase with the pasted-license form on the [product site](https://config-apply-witness.sociobot.in/). A license reported revoked locks Team Receipt Kit features.
+
+## Privacy, terms, and deployment
+
+Apply Witness has no telemetry or behavioral analytics. The browser demo makes no third-party request. The site stores a license only after one is supplied, and removes a returned license from the visible URL. Read the full [Privacy policy](https://config-apply-witness.sociobot.in/privacy/) and [Terms](https://config-apply-witness.sociobot.in/terms/).
+
+The factory deploys the static site from `dist/site/`. Do not add provider or billing credentials to this repository.
 
 ## Develop and verify
 
+Install the documented prerequisites, then run:
+
 ```sh
-cargo test --all-targets
 npm ci
 npm test
+npm run lint
 npm run build
+cargo test --doc
+cargo package --locked
+npm pack --dry-run --json
 ```
 
-`npm run build` compiles the Rust binary into `dist/bin/` and the static landing/docs site into `dist/site/`. `cargo package --locked` and `npm pack` create the ready-to-publish artifacts; registry publishing and releases are handled by the factory.
+Every visitor-facing claim is listed in [.factory/claims.json](.factory/claims.json). Run its declared commands from a clean checkout. `npm run build` writes the Rust binary to `dist/bin/` and the static site to `dist/site/`.
 
-## Privacy and security
-
-Apply Witness has no telemetry. Provider tokens remain in environment variables and all provider calls are read-only. Receipt values for paths containing token, secret, password, key, or credential are redacted. The site stores a license token and daily verification verdict only when a buyer supplies one; see [Privacy](https://config-apply-witness.sociobot.in/privacy/) and [Terms](https://config-apply-witness.sociobot.in/terms/).
+Registry publication and release uploads are handled by the factory. The ready-to-publish checks are `cargo package --locked` and `npm pack --dry-run --json`.
 
 ## License
 

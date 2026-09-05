@@ -1,4 +1,4 @@
-use apply_witness::{Receipt, Status, VerifyInput, supported_supabase_fields, verify_supabase};
+use apply_witness::{Receipt, Status, VerifyInput, supported_supabase_mappings, verify_supabase};
 use chrono::{DateTime, Utc};
 use clap::{Args, Parser, Subcommand};
 use reqwest::blocking::Client;
@@ -32,6 +32,8 @@ struct Cli {
 enum Command {
     /// Verify one declared configuration against provider readback.
     Verify(VerifyArgs),
+    /// Run the bundled sample in a temporary directory without a provider request.
+    Demo(DemoArgs),
     /// Verify multiple configurations from a manifest (Team Receipt Kit).
     Batch(BatchArgs),
     /// List installed provider adapters.
@@ -71,6 +73,13 @@ struct VerifyArgs {
     /// Supabase Management API origin.
     #[arg(long, env = "APPLY_WITNESS_SUPABASE_API", default_value = DEFAULT_SUPABASE_API)]
     api_base: String,
+}
+
+#[derive(Args)]
+struct DemoArgs {
+    /// Emit the sample receipt as machine-readable JSON.
+    #[arg(long)]
+    json: bool,
 }
 
 #[derive(Args)]
@@ -119,8 +128,8 @@ fn dispatch(cli: Cli) -> Result<u8, String> {
         Some(Command::Schema { provider }) => {
             require_supabase(&provider)?;
             println!("Audited Supabase Management API auth mappings:");
-            for path in supported_supabase_fields() {
-                println!("- {path}");
+            for (declared, readback, normalization) in supported_supabase_mappings() {
+                println!("- {declared} -> {readback} ({normalization})");
             }
             println!("\nAll other declared [auth] fields produce unknown receipts.");
             Ok(0)
@@ -137,6 +146,7 @@ fn dispatch(cli: Cli) -> Result<u8, String> {
             }
             Ok(if receipt.successful() { 0 } else { 2 })
         }
+        Some(Command::Demo(args)) => run_demo(args),
         Some(Command::Batch(args)) => run_batch(args),
         Some(Command::License {
             command: LicenseCommand::Verify { token },
@@ -308,6 +318,53 @@ fn write_receipt(path: &Path, receipt: &Receipt) -> Result<(), String> {
     Ok(())
 }
 
+fn run_demo(args: DemoArgs) -> Result<u8, String> {
+    let directory = demo_directory()?;
+    fs::create_dir_all(&directory).map_err(|e| format!("create demo directory: {e}"))?;
+    let config_path = directory.join("supabase-config.toml");
+    let readback_path = directory.join("auth-readback.json");
+    let receipt_path = directory.join("witness-receipt.json");
+    fs::write(
+        &config_path,
+        include_bytes!("../examples/supabase-config.toml"),
+    )
+    .map_err(|e| format!("write demo config: {e}"))?;
+    fs::write(
+        &readback_path,
+        include_bytes!("../examples/auth-readback.json"),
+    )
+    .map_err(|e| format!("write demo readback: {e}"))?;
+    let receipt = execute_verify(&VerifyArgs {
+        provider: "supabase".into(),
+        project_ref: Some("sample-project".into()),
+        config: config_path,
+        readback: Some(readback_path),
+        receipt: Some(receipt_path.clone()),
+        json: true,
+        api_base: DEFAULT_SUPABASE_API.into(),
+    })?;
+    write_receipt(&receipt_path, &receipt)?;
+    if args.json {
+        print_json(&json!({
+            "demo_directory": directory,
+            "receipt_path": receipt_path,
+            "receipt": receipt,
+        }))?;
+    } else {
+        print_receipt(&receipt, Some(&receipt_path));
+        println!("sample files are in {}", directory.display());
+    }
+    Ok(if receipt.successful() { 0 } else { 2 })
+}
+
+fn demo_directory() -> Result<PathBuf, String> {
+    let stamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(|e| e.to_string())?
+        .as_nanos();
+    Ok(env::temp_dir().join(format!("apply-witness-demo-{}-{stamp}", std::process::id())))
+}
+
 #[derive(Deserialize)]
 struct Manifest {
     jobs: Vec<Job>,
@@ -334,8 +391,7 @@ struct BatchResult {
 }
 
 fn run_batch(args: BatchArgs) -> Result<u8, String> {
-    let token = env::var("APPLY_WITNESS_LICENSE").map_err(|_| "Team Receipt Kit is locked: set APPLY_WITNESS_LICENSE or run `apply-witness license verify`".to_string())?;
-    verify_license(&token, false).map_err(|e| format!("Team Receipt Kit is locked: {e}"))?;
+    require_batch_license()?;
     let bytes = fs::read(&args.manifest).map_err(|e| format!("read manifest: {e}"))?;
     let manifest: Manifest =
         serde_json::from_slice(&bytes).map_err(|e| format!("parse manifest: {e}"))?;
@@ -399,6 +455,25 @@ fn run_batch(args: BatchArgs) -> Result<u8, String> {
         }
     }
     Ok(if failed { 2 } else { 0 })
+}
+
+fn require_batch_license() -> Result<(), String> {
+    if let Ok(token) = env::var("APPLY_WITNESS_LICENSE") {
+        return verify_license(&token, false)
+            .map(|_| ())
+            .map_err(|e| format!("Team Receipt Kit is locked: {e}"));
+    }
+    let cache_path = license_cache_path()?;
+    let cached = fs::read(&cache_path)
+        .ok()
+        .and_then(|bytes| serde_json::from_slice::<LicenseCache>(&bytes).ok());
+    if let Some(cache) = cached
+        && cache.valid
+        && Utc::now() - cache.checked_at < chrono::Duration::days(1)
+    {
+        return Ok(());
+    }
+    Err("Team Receipt Kit is locked: set APPLY_WITNESS_LICENSE, then run `apply-witness license verify` to cache it for later batch runs".into())
 }
 
 fn join_relative(base: &Path, path: PathBuf) -> PathBuf {
@@ -491,7 +566,7 @@ fn write_license_cache(path: &Path, value: &LicenseCache) -> Result<(), String> 
     let data = serde_json::to_vec(value).map_err(|e| e.to_string())?;
     #[cfg(unix)]
     {
-        use std::os::unix::fs::OpenOptionsExt;
+        use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
         let mut file = fs::OpenOptions::new()
             .write(true)
             .create(true)
@@ -499,6 +574,8 @@ fn write_license_cache(path: &Path, value: &LicenseCache) -> Result<(), String> 
             .mode(0o600)
             .open(path)
             .map_err(|e| e.to_string())?;
+        file.set_permissions(fs::Permissions::from_mode(0o600))
+            .map_err(|e| format!("secure license cache permissions: {e}"))?;
         file.write_all(&data).map_err(|e| e.to_string())?;
     }
     #[cfg(not(unix))]

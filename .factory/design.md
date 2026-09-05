@@ -32,6 +32,9 @@ The base unit is 4px. Common steps are 8, 12, 16, 24, 32, 48, 72, and 96px. A tw
 ## Asset plan and provenance
 
 - `site/public/witness-press.webp`: original raster hero generated for this product using `/opt/fleet/lib/gen-image.sh`, the factory `factory-image` deployment, on 2026-08-28. Prompt: “Editorial halftone screenprint illustration for a developer CLI landing page: an abstract configuration document passes through a compact inspection press and emerges as a field-by-field proof receipt, visible registration targets and check marks, cream paper, nearly black ink, deep teal and vermilion spot colors, coarse authentic Ben-Day dots, crisp flat shapes, no gradients, no readable words, no logos, no UI screenshot, wide landscape composition, generous quiet space, tactile imperfect ink edges.” The generated PNG is converted locally to WebP. License: original project asset, produced for Sociobot.
+- `site/public/social-card.webp`: a 1200×630 centre crop derived locally from the original hero for social metadata on 2026-09-05. It introduces no third-party asset or license.
+- `site/public/apple-touch-icon.png`: a 180×180 rasterized version of the hand-authored registration mark, composed locally on 2026-09-05. License: original project asset.
+- `site/public/cli-demo.svg`: hand-authored, self-hosted SVG terminal recording of the real `apply-witness demo` bundled sample. The page also provides the same transcript as selectable HTML text. License: original project asset.
 - Product mark, status glyphs, dot textures, and registration lines are hand-authored in CSS/HTML; no icon library or stock asset.
 
 ## Interaction grammar

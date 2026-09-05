@@ -3,27 +3,43 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Apply Witness privacy policy.">
-    <title>Privacy — Apply Witness</title>
+    <meta name="description" content="Read how Apply Witness handles configuration, tokens, receipts, and license data.">
+    <meta name="theme-color" content="#f3eedf">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Privacy — Apply Witness">
+    <meta property="og:description" content="Read how Apply Witness handles configuration, tokens, receipts, and license data.">
+    <meta property="og:image" content="https://config-apply-witness.sociobot.in/social-card.webp">
+    <meta property="og:url" content="https://config-apply-witness.sociobot.in/privacy/">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Privacy — Apply Witness">
+    <meta name="twitter:description" content="Read how Apply Witness handles configuration, tokens, receipts, and license data.">
+    <meta name="twitter:image" content="https://config-apply-witness.sociobot.in/social-card.webp">
+    <link rel="canonical" href="https://config-apply-witness.sociobot.in/privacy/">
     <link rel="icon" href="/mark.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <link rel="stylesheet" href="/src/style.css">
+    <title>Privacy — Apply Witness</title>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to main content</a>
-    <header class="site-header"><a class="brand" href="/" aria-label="Apply Witness home"><span class="brand-mark" aria-hidden="true">AW</span><span>Apply Witness</span></a><nav aria-label="Primary"><a href="/">Back to product</a></nav></header>
-    <main id="main" class="legal-page">
-      <p class="kicker">Policy · effective 28 August 2026</p>
-      <h1>Privacy</h1>
-      <p>Apply Witness is designed to collect as little as possible. The CLI has no analytics or telemetry, and configuration processing happens on your machine.</p>
-      <h2>CLI data</h2>
-      <p>The CLI reads the configuration file you select and, for live verification, sends a read-only request directly to Supabase’s Management API. Provider access tokens stay in your environment and are not written to receipts. Secret-like fields are redacted. Offline fixture mode makes no provider request.</p>
+    <header class="site-header"><a class="brand" href="/" aria-label="Apply Witness home"><span class="brand-mark" aria-hidden="true">AW</span><span>Apply Witness</span></a><nav aria-label="Primary"><a href="/demo/">Demo</a><a href="/#cli">CLI</a><a href="/privacy/" aria-current="page">Privacy</a></nav></header>
+    <main id="main" class="legal-page" tabindex="-1">
+      <p class="kicker">Effective 5 September 2026</p>
+      <h1>How Apply Witness handles data</h1>
+      <p>Apply Witness checks configuration on your machine. It has no telemetry or behavioral analytics.</p>
+      <h2>Configuration and provider access</h2>
+      <p>The CLI reads the configuration file you select. Live verification sends one read-only request to Supabase’s Management API.</p>
+      <p>Provider access tokens stay in your environment. The CLI does not store or print them. Offline fixture mode sends no provider request.</p>
+      <h2>Receipts and redaction</h2>
+      <p>A receipt contains the configuration hash, timing, provider identity, results, and redacted field values. Paths and values that look like secrets, including environment substitutions, are redacted.</p>
+      <p>Receipt files use owner-only permissions on supported Unix systems. You choose where to save a receipt.</p>
       <h2>License data</h2>
-      <p>If you buy or restore the Team Receipt Kit, this website stores the license token and its latest verification verdict in your browser’s local storage. The CLI stores the token and verdict in your operating system’s user cache with owner-only permissions. License verification sends the token to Sociobot at <code>api.sociobot.in</code> no more than once per day unless you explicitly request a check.</p>
-      <h2>Payments and logs</h2>
-      <p>Sociobot / Dodo is the merchant of record and processes payment details on its hosted checkout. This site never receives card information. Ordinary hosting and API security logs may contain IP address, user agent, path, and timestamp and are retained only as needed for operations and abuse prevention. There are no advertising cookies or behavioral analytics.</p>
-      <h2>Your choices</h2>
-      <p>You can use the free CLI without a license or site storage. Clear this site’s local storage to remove a browser license. Remove <code>apply-witness/license.json</code> from your user cache to remove the CLI cache. For privacy questions, contact <a href="mailto:privacy@sociobot.in">privacy@sociobot.in</a>.</p>
+      <p>The website stores a license token and its latest verdict in browser local storage only after you supply a token. The CLI stores a license token and verdict in its user cache with owner-only permissions.</p>
+      <p>License verification sends the token to Sociobot at <code>api.sociobot.in</code>. A valid cached verdict is reused for up to one day.</p>
+      <h2>Payments and choices</h2>
+      <p>Sociobot / Dodo hosts checkout and processes payment details. This site does not receive card details.</p>
+      <p>Clear this site’s local storage to remove a browser license. Remove <code>apply-witness/license.json</code> from your user cache to remove the CLI license. Send privacy questions to <a href="mailto:privacy@sociobot.in">privacy@sociobot.in</a>.</p>
     </main>
-    <footer><a class="brand" href="/"><span class="brand-mark" aria-hidden="true">AW</span><span>Apply Witness</span></a><p>Local-first verification.</p><nav aria-label="Footer"><a href="/terms/">Terms</a><a href="/">Product</a></nav></footer>
+    <footer><a class="brand" href="/" aria-label="Apply Witness home"><span class="brand-mark" aria-hidden="true">AW</span><span>Apply Witness</span></a><p>Verify Supabase config after apply. Built by Param Factory · v0.1.0</p><nav aria-label="Footer"><a href="/demo/">Demo</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="https://github.com/B-Divyesh/sf-config-apply-witness">Source</a></nav></footer>
   </body>
 </html>

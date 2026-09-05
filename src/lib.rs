@@ -123,6 +123,7 @@ struct Mapping {
     readback: &'static str,
     invert_bool: bool,
     set_like: bool,
+    normalization: &'static str,
 }
 
 fn mappings() -> BTreeMap<&'static str, Mapping> {
@@ -133,6 +134,7 @@ fn mappings() -> BTreeMap<&'static str, Mapping> {
                 readback: "uri_allow_list",
                 invert_bool: false,
                 set_like: true,
+                normalization: "trimmed URL set; order ignored",
             },
         ),
         (
@@ -141,6 +143,7 @@ fn mappings() -> BTreeMap<&'static str, Mapping> {
                 readback: "mailer_secure_email_change_enabled",
                 invert_bool: false,
                 set_like: false,
+                normalization: "exact value",
             },
         ),
         (
@@ -149,6 +152,7 @@ fn mappings() -> BTreeMap<&'static str, Mapping> {
                 readback: "mailer_autoconfirm",
                 invert_bool: true,
                 set_like: false,
+                normalization: "provider boolean is inverted",
             },
         ),
         (
@@ -157,6 +161,7 @@ fn mappings() -> BTreeMap<&'static str, Mapping> {
                 readback: "external_email_enabled",
                 invert_bool: false,
                 set_like: false,
+                normalization: "exact value",
             },
         ),
         (
@@ -165,6 +170,7 @@ fn mappings() -> BTreeMap<&'static str, Mapping> {
                 readback: "mailer_otp_exp",
                 invert_bool: false,
                 set_like: false,
+                normalization: "exact value",
             },
         ),
         (
@@ -173,6 +179,7 @@ fn mappings() -> BTreeMap<&'static str, Mapping> {
                 readback: "mailer_secure_password_change_enabled",
                 invert_bool: false,
                 set_like: false,
+                normalization: "exact value",
             },
         ),
         (
@@ -181,6 +188,7 @@ fn mappings() -> BTreeMap<&'static str, Mapping> {
                 readback: "external_anonymous_users_enabled",
                 invert_bool: false,
                 set_like: false,
+                normalization: "exact value",
             },
         ),
         (
@@ -189,6 +197,7 @@ fn mappings() -> BTreeMap<&'static str, Mapping> {
                 readback: "security_manual_linking_enabled",
                 invert_bool: false,
                 set_like: false,
+                normalization: "exact value",
             },
         ),
         (
@@ -197,6 +206,7 @@ fn mappings() -> BTreeMap<&'static str, Mapping> {
                 readback: "refresh_token_rotation_enabled",
                 invert_bool: false,
                 set_like: false,
+                normalization: "exact value",
             },
         ),
         (
@@ -205,6 +215,7 @@ fn mappings() -> BTreeMap<&'static str, Mapping> {
                 readback: "disable_signup",
                 invert_bool: true,
                 set_like: false,
+                normalization: "provider boolean is inverted",
             },
         ),
         (
@@ -213,6 +224,7 @@ fn mappings() -> BTreeMap<&'static str, Mapping> {
                 readback: "jwt_exp",
                 invert_bool: false,
                 set_like: false,
+                normalization: "exact integer or float value",
             },
         ),
         (
@@ -221,6 +233,7 @@ fn mappings() -> BTreeMap<&'static str, Mapping> {
                 readback: "refresh_token_reuse_interval",
                 invert_bool: false,
                 set_like: false,
+                normalization: "exact integer or float value",
             },
         ),
         (
@@ -229,6 +242,7 @@ fn mappings() -> BTreeMap<&'static str, Mapping> {
                 readback: "site_url",
                 invert_bool: false,
                 set_like: false,
+                normalization: "trim outer whitespace",
             },
         ),
         (
@@ -237,6 +251,7 @@ fn mappings() -> BTreeMap<&'static str, Mapping> {
                 readback: "sms_autoconfirm",
                 invert_bool: true,
                 set_like: false,
+                normalization: "provider boolean is inverted",
             },
         ),
         (
@@ -245,6 +260,7 @@ fn mappings() -> BTreeMap<&'static str, Mapping> {
                 readback: "external_phone_enabled",
                 invert_bool: false,
                 set_like: false,
+                normalization: "exact value",
             },
         ),
     ])
@@ -252,6 +268,13 @@ fn mappings() -> BTreeMap<&'static str, Mapping> {
 
 pub fn supported_supabase_fields() -> Vec<&'static str> {
     mappings().keys().copied().collect()
+}
+
+pub fn supported_supabase_mappings() -> Vec<(&'static str, &'static str, &'static str)> {
+    mappings()
+        .into_iter()
+        .map(|(declared, mapping)| (declared, mapping.readback, mapping.normalization))
+        .collect()
 }
 
 pub fn verify_supabase(input: VerifyInput<'_>) -> Result<Receipt, String> {
@@ -273,7 +296,7 @@ fn verify_supabase_inner(input: VerifyInput<'_>) -> Result<Receipt, String> {
     let mut fields = Vec::with_capacity(declared.len().max(1));
     for (path, wanted) in declared {
         summary.total += 1;
-        let secret = is_secret_path(&path);
+        let secret = should_redact(&path, &wanted);
         let shown_wanted = if secret {
             JsonValue::String("[REDACTED]".into())
         } else {
@@ -425,10 +448,62 @@ fn equivalent(wanted: &JsonValue, got: &JsonValue, set_like: bool) -> bool {
         return normalized_set(wanted) == normalized_set(got);
     }
     match (wanted, got) {
-        (JsonValue::Number(a), JsonValue::Number(b)) => a.as_f64() == b.as_f64(),
+        (JsonValue::Number(a), JsonValue::Number(b)) => numbers_equivalent(a, b),
         (JsonValue::String(a), JsonValue::String(b)) => a.trim() == b.trim(),
         _ => wanted == got,
     }
+}
+
+/// Compare integer JSON values exactly. Converting all numbers to `f64` makes
+/// distinct integers above 2^53 look equal, which is unsafe for a witness.
+/// Integer/float comparisons are allowed only in the range where the integer
+/// can be represented exactly by an IEEE-754 double.
+fn numbers_equivalent(a: &serde_json::Number, b: &serde_json::Number) -> bool {
+    match (number_kind(a), number_kind(b)) {
+        (NumberKind::Signed(left), NumberKind::Signed(right)) => left == right,
+        (NumberKind::Unsigned(left), NumberKind::Unsigned(right)) => left == right,
+        (NumberKind::Signed(left), NumberKind::Unsigned(right)) => {
+            left >= 0 && left as u64 == right
+        }
+        (NumberKind::Unsigned(left), NumberKind::Signed(right)) => {
+            right >= 0 && left == right as u64
+        }
+        (NumberKind::Float(left), NumberKind::Float(right)) => left == right,
+        (NumberKind::Signed(integer), NumberKind::Float(float))
+        | (NumberKind::Float(float), NumberKind::Signed(integer)) => {
+            integer_float_equivalent(integer as i128, float)
+        }
+        (NumberKind::Unsigned(integer), NumberKind::Float(float))
+        | (NumberKind::Float(float), NumberKind::Unsigned(integer)) => {
+            integer_float_equivalent(integer as i128, float)
+        }
+    }
+}
+
+enum NumberKind {
+    Signed(i64),
+    Unsigned(u64),
+    Float(f64),
+}
+
+fn number_kind(number: &serde_json::Number) -> NumberKind {
+    if let Some(value) = number.as_i64() {
+        NumberKind::Signed(value)
+    } else if let Some(value) = number.as_u64() {
+        NumberKind::Unsigned(value)
+    } else {
+        // serde_json only produces finite f64 values here; retain the explicit
+        // fallback so a future parser change remains conservative.
+        NumberKind::Float(number.as_f64().unwrap_or(f64::NAN))
+    }
+}
+
+fn integer_float_equivalent(integer: i128, float: f64) -> bool {
+    const MAX_SAFE_INTEGER: i128 = 9_007_199_254_740_992;
+    float.is_finite()
+        && float.fract() == 0.0
+        && (-MAX_SAFE_INTEGER..=MAX_SAFE_INTEGER).contains(&integer)
+        && float == integer as f64
 }
 
 fn normalized_set(value: &JsonValue) -> Vec<String> {
@@ -465,6 +540,13 @@ fn is_secret_path(path: &str) -> bool {
     ]
     .iter()
     .any(|word| path.contains(word))
+}
+
+fn should_redact(path: &str, value: &toml::Value) -> bool {
+    is_secret_path(path)
+        || value
+            .as_str()
+            .is_some_and(|text| text.trim_start().starts_with("env("))
 }
 
 #[cfg(test)]
@@ -520,5 +602,52 @@ mod tests {
                 .unwrap()
                 .contains("never-print-me")
         );
+    }
+
+    #[test]
+    fn environment_substitutions_are_redacted_even_on_public_paths() {
+        let receipt = verify("[auth]\nsite_url='env(PRIVATE_SITE_URL)'\n", "{}");
+        let field = &receipt.fields[0];
+        assert!(field.redacted);
+        assert_eq!(field.declared, Some(JsonValue::String("[REDACTED]".into())));
+        assert!(
+            !serde_json::to_string(&receipt)
+                .unwrap()
+                .contains("PRIVATE_SITE_URL")
+        );
+    }
+
+    #[test]
+    fn distinct_large_integers_never_match() {
+        let receipt = verify(
+            "[auth]\njwt_expiry = 9007199254740992\n",
+            r#"{"jwt_exp":9007199254740993}"#,
+        );
+        assert_eq!(receipt.conclusion, Status::Changed);
+        assert_eq!(receipt.summary.changed, 1);
+    }
+
+    #[test]
+    fn integer_boundaries_and_safe_integer_float_cases_are_conservative() {
+        let minimum = verify(
+            "[auth]\njwt_expiry = -9223372036854775808\n",
+            r#"{"jwt_exp":-9223372036854775808}"#,
+        );
+        assert_eq!(minimum.conclusion, Status::Applied);
+
+        let unsigned_readback = verify(
+            "[auth]\njwt_expiry = 9223372036854775807\n",
+            r#"{"jwt_exp":9223372036854775807}"#,
+        );
+        assert_eq!(unsigned_readback.conclusion, Status::Applied);
+
+        let safe_float = verify("[auth]\njwt_expiry = 3600\n", r#"{"jwt_exp":3600.0}"#);
+        assert_eq!(safe_float.conclusion, Status::Applied);
+
+        let unsafe_float = verify(
+            "[auth]\njwt_expiry = 9007199254740993\n",
+            r#"{"jwt_exp":9007199254740993.0}"#,
+        );
+        assert_eq!(unsafe_float.conclusion, Status::Changed);
     }
 }

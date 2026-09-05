@@ -12,4 +12,13 @@ describe('browser witness', () => {
     expect(() => runWitness('', '{}')).toThrow('Add at least one');
     expect(() => runWitness('[auth]\nsite_url="x"', '{')).toThrow('not valid JSON');
   });
+
+  it('keeps browser comparisons conservative for large integers', () => {
+    const result = runWitness('[auth]\njwt_expiry = 9007199254740992', '{"jwt_exp":9007199254740993}');
+    expect(result).toEqual([{
+      path: 'auth.jwt_expiry',
+      status: 'unknown',
+      detail: 'Large integers need the CLI for an exact comparison'
+    }]);
+  });
 });

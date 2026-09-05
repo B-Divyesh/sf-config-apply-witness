@@ -11,8 +11,9 @@
     "build": "npm run build:site && npm run build:cli",
     "test:unit": "vitest run tests/*.test.ts",
     "test:e2e": "playwright test",
+    "test:claims": "playwright test tests/e2e/claims.spec.ts --project=chromium",
     "test": "cargo test --all-targets && npm run test:unit && npm run test:e2e",
-    "typecheck": "tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --lib ES2022,DOM,DOM.Iterable site/src/main.ts site/src/witness.ts",
+    "typecheck": "tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --lib ES2022,DOM,DOM.Iterable site/src/main.ts site/src/demo.ts site/src/witness.ts",
     "lint": "cargo fmt --all -- --check && cargo clippy --all-targets -- -D warnings && npm run typecheck",
     "preview": "vite preview --config site/vite.config.ts"
   },

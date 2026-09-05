@@ -2,7 +2,7 @@
   <title id="title">Apply Witness CLI sample recording</title>
   <desc id="description">A terminal runs apply-witness demo. The bundled sample reports six applied fields and one unknown field, then prints a temporary receipt path.</desc>
   <style>
-    .bg{fill:#171815}.bar{fill:#30322d}.dot-a{fill:#e05238}.dot-b{fill:#d8a849}.dot-c{fill:#24613b}.prompt{fill:#8dd4c8}.plain{fill:#f8f2e1}.muted{fill:#b8b7ae}.ok{fill:#87c99a}.warn{fill:#e6bb65}.line{opacity:0;animation:show .01s forwards}.one{animation-delay:.2s}.two{animation-delay:.7s}.three{animation-delay:1.2s}.four{animation-delay:1.7s}.five{animation-delay:2.2s}.six{animation-delay:2.7s}.seven{animation-delay:3.2s}@keyframes show{to{opacity:1}}@media (prefers-reduced-motion:reduce){.line{opacity:1;animation:none}}
+    .bg{fill:#171815}.bar{fill:#30322d}.dot-a{fill:#e05238}.dot-b{fill:#d8a849}.dot-c{fill:#24613b}.prompt{fill:#8dd4c8}.plain{fill:#f8f2e1}.muted{fill:#b8b7ae}.ok{fill:#87c99a}.warn{fill:#e6bb65}.line{opacity:1}
   </style>
   <rect class="bg" width="960" height="540"/>
   <rect class="bar" width="960" height="56"/>

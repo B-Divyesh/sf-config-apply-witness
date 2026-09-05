@@ -1,43 +1,35 @@
-# Apply Witness independent verification 2 handoff
+# Apply Witness review 1 handoff
 
-## Release status
+## Result
 
-**FAIL.** Candidate `3a56baf047e00bdc4a63cec38e0f6f968cdc64a5` was independently verified from a clean checkout against <https://config-apply-witness.sociobot.in/> on 2026-08-28 UTC for work order `config-apply-witness-verify-2`.
+**FAIL.** Review work order `config-apply-witness-review-1` found 8 defects and 20 untested public claims. The implementation candidate is `a453b1641328f9eb2df7609e1eec0b9e9b0f872a`; the repository documentation reviewed is `7c682bbacf4e4b8cdf03df05ccb79f3b6e5fffc9`.
 
-The candidate's static deployment matches the exact local production build, the core CLI satisfies the researched brief's conservative classification goal, all repository quality gates pass, and the prior checkout/deployment/package/accessibility defects are repaired. One release-blocking privacy defect remains: overwriting a pre-existing license cache does not force owner-only permissions, so the stored paid bearer token can remain in a `0644` file. A low-severity recovery-message defect also remains: after successful `license verify`, `batch` without `APPLY_WITNESS_LICENSE` still refuses to run while telling the user to run `license verify`.
+Full evidence and required changes are in [review-1.md](review-1.md).
 
-Full evidence and reproductions are in [verification-2.md](verification-2.md).
+## Main blockers
 
-## Verification summary
+- Different integers above the exact `f64` range can be reported as applied with exit 0.
+- `.factory/claims.json` is absent, leaving 20 consolidated public claims without required claim commands.
+- The required one-click sample sandbox, `/demo` mode, persistent sample label, reset, CLI demo command, and `.factory/demo.md` are absent.
+- An existing CLI license cache can remain `0644` after overwrite.
+- First-screen copy, 404/routing, required metadata/CSP, and common footer structure remain incomplete.
+- Batch still recommends a recovery action that cannot unlock it.
+- The README's environment-substitution redaction claim is false as written.
 
-- `npm ci`, `npm test`, `npm run lint`, `cargo test --doc`, both npm audits, exact `npm run build`, `cargo package --locked`, and `npm pack --dry-run --json` passed.
-- Tests: 7 Rust unit/integration, 8 Vitest, 14 Playwright, and 1 doctest passed.
-- Packaged crate: 12 intended files; its binary and public Rust API were installed/exercised in clean consumers.
-- CLI cases covered applied/changed/unknown, zero and normalization boundaries, absent/wrong-type fields, malformed TOML/JSON, unsupported provider, missing files/credentials, secret redaction, receipt permissions/hash, live readback and 401 handling, valid/invalid license checks, mixed/empty batches, and 12 concurrent processes.
-- Production matched local hashes for HTML, JS, CSS, service worker, hero, privacy, and terms.
-- Checkout returned `303` to hosted Dodo checkout; invalid verification and production-origin CORS worked. No paid transaction was placed.
-- Desktop and 390 px mobile passed semantic, keyboard, focus, 44 px target, target-spacing, reduced-motion, error/recovery, privacy/network, console, axe serious/critical, service-worker update, and offline checks.
-- Response policy passed: immutable hashed assets/hero, `no-cache` service worker, HSTS, referrer/nosniff/frame/permissions headers, and hidden Azure config.
-- Lighthouse 12.8.2 mobile: Performance 98, Accessibility 100, Best Practices 100, SEO 100; FCP 1.1 s, LCP 2.0 s, TBT 110 ms, CLS 0, 219 KiB transfer.
+## Verification completed
 
-## Re-run
+- `npm ci`, `npm test`, `npm run lint`, `cargo test --doc`, both npm audits, `npm run build`, `cargo package --locked`, and `npm pack --dry-run --json` passed.
+- The packaged CLI was installed in a clean consumer prefix and exercised across normal, invalid, boundary, live-request, license, batch, permission, and recovery cases.
+- Live desktop and 390 px phone checks covered sample output, errors and recovery, keyboard, focus, touch size, reduced motion, axe, privacy requests, offline reload, update state, routes, legal pages, links, and the missing 404 behavior.
+- Live runtime artifacts match the local production build byte for byte.
+- Lighthouse mobile: Performance 99, Accessibility 100, Best Practices 100, SEO 100; LCP 2.0 s, TBT 0 ms, CLS 0, transfer 219 KiB.
 
-```sh
-npm ci
-npm test
-npm run lint
-cargo test --doc
-npm audit --audit-level=low
-npm audit --omit=dev --audit-level=low
-npm run build
-cargo package --locked
-npm pack --dry-run --json
-```
+## Earlier findings
 
-For the blocking regression, pre-create `$XDG_CACHE_HOME/apply-witness/license.json` as `0644`, verify a valid token against a controlled billing endpoint, then inspect the resulting mode. It remains `0644`; expected is `0600`.
+Checkout, receipt permissions, service-worker privacy, deployment response policy, mobile target size, Cargo packaging, and README language are fixed. License-cache permissions and the batch recovery message remain open.
 
-## Required next step
+## Next steps
 
-Apply the same explicit permission reset used by receipt overwrites to `write_license_cache`, add an integration regression that begins with an existing `0644` cache, and clarify or implement the `license verify` recovery promised by the batch error. Re-run the full gates and deployed verification before release.
+Fix the integer comparison and license-cache permissions first. Then implement the demo and claims contracts, correct the copy and site structure, add regression coverage for every finding, and repeat deployed verification.
 
-No product code was modified during verification. Only this handoff and `.factory/verification-2.md` were added/updated.
+No product code was modified during this review. Only review and handoff reports were changed.
